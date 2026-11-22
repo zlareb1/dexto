@@ -1,0 +1,58 @@
+name: Qualify Loom documentation example
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - docs/docs/mcp/loom.md
+      - docs/docs/mcp/overview.md
+      - .github/workflows/loom-guide.yml
+      - qualification/qualify.mjs
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install qualification dependencies
+        run: |
+          corepack pnpm --dir qualification add --ignore-workspace --ignore-scripts --save-exact @dexto/core@1.19.4 yaml@2.8.2
+      - name: Exercise the documented script against an inert MCP fixture
+        run: node qualification/qualify.mjs docs/docs/mcp/loom.md
+  documentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Import the existing documentation lock
+        working-directory: docs
+        run: corepack pnpm import --ignore-workspace
+      - name: Install documentation dependencies
+        working-directory: docs
+        run: corepack pnpm install --ignore-workspace --frozen-lockfile --config.node-linker=hoisted
+      - name: Build documentation
+        working-directory: docs
+        run: corepack pnpm build
+      - name: Check the rendered guide and navigation
+        run: |
+          test -f docs/build/docs/mcp/loom.html
+          node --input-type=module - <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+          const guide = await readFile('docs/build/docs/mcp/loom.html', 'utf8');
+          const overview = await readFile('docs/build/docs/mcp/overview.html', 'utf8');
+          assert(guide.includes('Read shared memory from Loom'));
+          assert(guide.includes('LOOM_MEMORY_KEY'));
+          assert(overview.includes('/docs/mcp/loom'));
+          JS
