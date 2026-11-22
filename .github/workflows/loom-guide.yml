@@ -40,7 +40,7 @@ jobs:
         run: corepack pnpm import --ignore-workspace
       - name: Install documentation dependencies
         working-directory: docs
-        run: corepack pnpm install --ignore-workspace --frozen-lockfile
+        run: corepack pnpm install --ignore-workspace --frozen-lockfile --config.node-linker=hoisted
       - name: Build documentation
         working-directory: docs
         run: corepack pnpm build
