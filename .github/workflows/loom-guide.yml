@@ -37,7 +37,7 @@ jobs:
           node-version: '22'
       - name: Import the existing documentation lock
         working-directory: docs
-        run: corepack pnpm import
+        run: corepack pnpm import --ignore-workspace
       - name: Install documentation dependencies
         working-directory: docs
         run: corepack pnpm install --ignore-workspace --frozen-lockfile
